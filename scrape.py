@@ -1,11 +1,8 @@
-'''import datetime
-current_year = datetime.datetime.now().year
-print(current_year)  # Uses current year if config.toml not specified'''
-
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.select import Select
+from selenium.common.exceptions import NoSuchElementException
 
 from sys import platform
 import toml
@@ -13,6 +10,8 @@ import time
 import datetime
 
 import pandas as pd
+
+import re
 
 def get_year_from_config() -> int:
     """Reads the year from the config.toml file if it exists, otherwise uses the current year
@@ -45,6 +44,56 @@ def create_dataframe(columns: list) -> pd.DataFrame:
     df = pd.DataFrame(columns=columns)
 
     return df
+
+def get_value_from_text(key: str) -> str:
+
+    try:
+        label = driver.find_element(By.XPATH, f"//b[contains(text(), '{key}')]")
+    except NoSuchElementException:
+        return ""
+
+    parent_element = label.find_element(By.XPATH, "..")  # Go to the parent element
+
+    extracted = parent_element.text.strip().split(": ")[-1] # Get all the text in the parent element
+
+    return extracted
+
+def find_senator_id(senator_dataframe: pd.DataFrame, senator_name: str, party: str, state: str) -> int:
+    found = senator_dataframe[
+    (senator_dataframe['senator_name'] == senator_name) &
+    (senator_dataframe['party'] == party) &
+    (senator_dataframe['state'] == state)]
+
+    if not found.empty:
+        return found.index[0]  # Return the index of the senator
+    else:
+        return -1  # Not found
+
+def get_senators(senator_dataframe: pd.DataFrame, attendance_dataframe: pd.DataFrame, vote_number: int) -> None:
+    senator_list = driver.find_element(By.XPATH, "//div[@class='newspaperDisplay_3column']")
+    # Now find all <span> elements within the <div>
+    senator_details = senator_list.find_elements(By.XPATH, './/span')
+
+    # Loop through each <span> element
+    for senator in senator_details:
+        pattern = r'(\w+) \((\w)-(\w+)\), (\w+)'
+        match = re.match(pattern, senator.text)
+
+        name = match.group(1)  # Name
+        party = match.group(2)  # Party
+        state = match.group(3)  # State
+        vote = match.group(4)   # Vote
+
+        print(name, party, state, vote)
+
+        senator_id = find_senator_id(senator_dataframe, name, party, state)
+
+        if senator_id == -1:
+            senator_dataframe.loc[len(senator_dataframe.index)] = [name, party, state]
+            senator_id = find_senator_id(senator_dataframe, name, party, state)
+
+        attendance_dataframe.loc[len(attendance_dataframe.index)] = [vote_number, senator_id, vote]
+
 
 # Setting up the webdriver
 options = Options()
@@ -89,7 +138,7 @@ vote_details_dataframe = create_dataframe(detail_columns)
 
 senator_columns = ['senator_name', 'party', 'state']
 senator_dataframe = create_dataframe(senator_columns)
-senator_dataframe['senator_number'] = range(1, len(senator_dataframe) + 1)
+#senator_dataframe['senator_number'] = range(1, len(senator_dataframe) + 1)
 
 attendance_columns = ['vote_number', 'senator_number', 'vote']
 attendance_dataframe = create_dataframe(attendance_columns)
@@ -110,7 +159,23 @@ for row in vote_rows:
         link.click()
 
         # Get the vote details
-        break
+        vote_number = get_value_from_text('Vote Number:')
+        vote_date = get_value_from_text('Vote Date:')
+        result = get_value_from_text('Result:')
+        measure_number = get_value_from_text('Measure Number:').split()[0].strip()
+        measure_title = get_value_from_text('Measure Title:')
+
+        vote_details_dataframe.loc[len(vote_details_dataframe)] = [vote_number, vote_date, result, measure_number, measure_title]
+
+        # Get the senators
+        get_senators(senator_dataframe, attendance_dataframe, vote_number)
+
+        vote_details_dataframe.to_csv('vote_details.csv', index=False)
+        senator_dataframe.to_csv('senators.csv', index=True)
+        attendance_dataframe.to_csv('attendance.csv', index=False)
+
+        driver.back()
+        #break
 
 print(get_year_from_config())
 time.sleep(10)
