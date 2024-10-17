@@ -21,7 +21,7 @@ python -m venv .venv  # or python3 -m venv venv
 source .venv/bin/activate
 ```
 
-### 3.: Install required packages with pip (Streamlit, OpenAI, PyPDF2)
+### 3.: Install required packages with pip (Selenium, Sci-kit Learn)
 ```bash
 pip install -r requirements.txt
 ```
