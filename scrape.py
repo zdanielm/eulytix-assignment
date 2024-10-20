@@ -69,7 +69,7 @@ def clean_measure_number(text: str) -> str:
     cleaned = re.search(r'^[^\(]+', text)  # Match everything before the first '('
     if cleaned:
         return cleaned.group(0).strip()  # Return the matched portion, stripped of whitespace
-    return text.strip()  # If no match, return the text as is
+    return text.strip()
 
 def find_senator_id(senator_dataframe: pd.DataFrame, senator_name: str, party: str, state: str) -> int:
     found = senator_dataframe[
@@ -82,32 +82,6 @@ def find_senator_id(senator_dataframe: pd.DataFrame, senator_name: str, party: s
     else:
         return -1  # Not found
 
-'''def get_senators(senator_dataframe: pd.DataFrame, attendance_dataframe: pd.DataFrame, vote_number: int) -> None:
-    senator_list = driver.find_element(By.XPATH, "//div[@class='newspaperDisplay_3column']")
-    # Now find all <span> elements within the <div>
-    senator_details = senator_list.find_elements(By.XPATH, './/span')
-    for senator in senator_details:
-        print(senator.text)
-
-    # Loop through each <span> element
-    for senator in senator_details:
-        pattern = r'(\w+) \((\w)-(\w+)\), (\w+)'
-        match = re.match(pattern, senator.text)
-
-        name = match.group(1)  # Name
-        party = match.group(2)  # Party
-        state = match.group(3)  # State
-        vote = match.group(4)   # Vote
-
-        print(name, party, state, vote)
-
-        senator_id = find_senator_id(senator_dataframe, name, party, state)
-
-        if senator_id == -1:
-            senator_dataframe.loc[len(senator_dataframe.index)] = [name, party, state]
-            senator_id = find_senator_id(senator_dataframe, name, party, state)
-
-        attendance_dataframe.loc[len(attendance_dataframe.index)] = [vote_number, senator_id, vote]'''
 
 def get_senators(senator_dataframe: pd.DataFrame, attendance_dataframe: pd.DataFrame, vote_number: int) -> None:
     time.sleep(0.5)
@@ -121,10 +95,10 @@ def get_senators(senator_dataframe: pd.DataFrame, attendance_dataframe: pd.DataF
     pattern = r'([A-Za-z\s]+)\s*\((\w{1,2})-(\w+)\),\s*'
 
     # Loop through each senator entry
-    for i in range(0, len(senator_details), 2):  # Process every 2 entries (name/party/state + vote)
-        senator_text = senator_details[i].strip()  # Strip any leading/trailing spaces
+    for i in range(0, len(senator_details), 2):
+        senator_text = senator_details[i].strip()
 
-        # Try to match the name/party/state pattern
+
         match = re.search(pattern, senator_text)
 
         if match:
@@ -135,9 +109,6 @@ def get_senators(senator_dataframe: pd.DataFrame, attendance_dataframe: pd.DataF
             # Extract the vote from the <b> tag in the next <br>-separated entry
             vote_html = senator_details[i+1].strip()  # Get the next entry which contains the vote
             vote = re.search(r'<b>(.*?)<\/b>', vote_html).group(1).strip()  # Extract vote from <b> tag
-
-            # Debugging: Show the extracted values
-            #print(f"Matched: Name={name}, Party={party}, State={state}, Vote={vote}")
 
             # Find senator's ID (assuming this function is defined)
             senator_id = find_senator_id(senator_dataframe, name, party, state)
@@ -195,46 +166,10 @@ vote_details_dataframe = create_dataframe(detail_columns)
 
 senator_columns = ['senator_name', 'party', 'state']
 senator_dataframe = create_dataframe(senator_columns)
-#senator_dataframe['senator_number'] = range(1, len(senator_dataframe) + 1)
 
 attendance_columns = ['vote_number', 'senator_number', 'vote']
 attendance_dataframe = create_dataframe(attendance_columns)
-'''
-for row in vote_rows:
-    # Get all the columns in this row (typically <td> for data cells)
-    columns = row.find_elements('tag name', 'td')
 
-    # Looping through the columns
-    for col in columns:
-        # Find the <td> element with class "contenttext sorting_1"
-        content_td = row.find_element('class name', 'contenttext.sorting_1')
-
-        # Find the <a> tag (link) inside the <td> element
-        link = content_td.find_element('tag name', 'a')
-
-        # Click the link, we are inside the vote details page
-        link.click()
-
-        # Get the vote details
-        vote_number = get_value_from_text('Vote Number:')
-        vote_date = get_value_from_text('Vote Date:')
-        result = get_value_from_text('Result:')
-        measure_number = clean_measure_number(get_value_from_text('Measure Number:'))
-        measure_title = get_value_from_text('Measure Title:')
-
-        vote_details_dataframe.loc[len(vote_details_dataframe)] = [vote_number, vote_date, result, measure_number, measure_title]
-        print(f"printed vote {vote_number}")
-
-        # Get the senators
-        get_senators(senator_dataframe, attendance_dataframe, vote_number)
-
-        vote_details_dataframe.to_csv(f'vote_details_{selected_year}.csv', index=False)
-        senator_dataframe.to_csv(f'senators_{selected_year}.csv', index=True)
-        attendance_dataframe.to_csv(f'attendance_{selected_year}.csv', index=False)
-
-        driver.back()
-        #break
-        '''
 for row in vote_rows:
     # Find the first column <td> element that contains the link (class "contenttext sorting_1")
     try:
@@ -255,7 +190,6 @@ for row in vote_rows:
 
         # Add the details to the dataframe
         vote_details_dataframe.loc[len(vote_details_dataframe)] = [vote_number, vote_date, result, measure_number, measure_title]
-        #print(f"printed vote {vote_number}")
 
         # Get the senators (assuming this function handles the senator data scraping)
         get_senators(senator_dataframe, attendance_dataframe, vote_number)
