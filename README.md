@@ -1,5 +1,4 @@
-# eulytix-assignment
- Eulytix Assignment
+# Eulytix Assignment
 
 ## Setup (using pip):
 
@@ -29,4 +28,4 @@ pip install -r requirements.txt
 ### Improvement Ideas:
 1. [TPOT](https://epistasislab.github.io/tpot/) AutoML
 2. [Polars](https://pola.rs/) If we need to handle larger datasets
-3. [RAPIDS CuDF and CuML](https://rapids.ai/ecosystem/#software) To Handle Data Handling and Machine Learning on the (NVIDIA) GPU using CUDA
+3. [RAPIDS CuDF and CuML](https://rapids.ai/ecosystem/#software) To Handle Data Processing and Machine Learning on the (NVIDIA) GPU using CUDA
